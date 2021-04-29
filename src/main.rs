@@ -1,5 +1,9 @@
 use bevy::prelude::*;
 
+use game::GamePlugin;
+
+mod game;
+
 fn main() {
     App::build()
         .insert_resource(ClearColor(Color::BLACK))
@@ -11,5 +15,6 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
+        .add_plugin(GamePlugin)
         .run();
 }
