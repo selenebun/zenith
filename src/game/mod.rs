@@ -1,19 +1,25 @@
 use bevy::prelude::*;
 
+use animation::AnimationPlugin;
 use collision::CollisionPlugin;
 use physics::PhysicsPlugin;
+use player::PlayerPlugin;
 use starfield::StarfieldPlugin;
 
+mod animation;
 mod collision;
 mod physics;
+mod player;
 mod starfield;
 
 pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_plugin(CollisionPlugin)
+        app.add_plugin(AnimationPlugin)
+            .add_plugin(CollisionPlugin)
             .add_plugin(PhysicsPlugin)
+            .add_plugin(PlayerPlugin)
             .add_plugin(StarfieldPlugin)
             .add_state(GameState::Playing)
             .add_startup_system(setup.system());
@@ -63,6 +69,9 @@ impl WindowSize {
 fn setup(mut commands: Commands, windows: Res<Windows>) {
     // Set up cameras.
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+
+    // Set up sprite scale.
+    commands.insert_resource(SpriteScale::new(1.5));
 
     // Set up window size.
     commands.insert_resource({
