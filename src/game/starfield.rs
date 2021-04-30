@@ -62,7 +62,7 @@ fn setup(
 
         // Calculate velocity.
         let velocity = {
-            let speed = rng.gen_range(1.0..3.0);
+            let speed = rng.gen_range(1.0..9.0);
             Velocity(Vec2::new(0.0, -speed))
         };
 
