@@ -1,19 +1,57 @@
 use bevy::prelude::*;
 
+use crate::game::player::Player;
 use crate::game::starfield::Star;
-use crate::game::WindowSize;
+use crate::game::{GameState, WindowSize};
 
 pub struct CollisionPlugin;
 
+#[derive(Debug)]
+pub struct SpriteSize {
+    pub width: f32,
+    pub height: f32,
+}
+
+impl SpriteSize {
+    /// Calculate the sprite size.
+    pub fn new(width: f32, height: f32, scale: f32) -> Self {
+        Self {
+            width: width * scale,
+            height: height * scale,
+        }
+    }
+}
+
 impl Plugin for CollisionPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_system(wrap_stars.system());
+        app.add_system_set(
+            SystemSet::on_update(GameState::Playing)
+                .with_system(bound_player.system().after("move_player")),
+        )
+        .add_system(wrap_stars.system());
     }
+}
+
+/// Get the inner bound for a sprite within a region.
+pub fn inner_bound(dimension: f32, sprite: f32) -> f32 {
+    (dimension - sprite) / 2.0
 }
 
 /// Get the outer bound for a sprite within a region.
 pub fn outer_bound(dimension: f32, sprite: f32) -> f32 {
     (dimension + sprite) / 2.0
+}
+
+fn bound_player(
+    window: Res<WindowSize>,
+    mut query: Query<(&SpriteSize, &mut Transform), With<Player>>,
+) {
+    for (sprite, mut transform) in query.iter_mut() {
+        let width = inner_bound(window.width, sprite.width);
+        let height = inner_bound(window.height, sprite.height);
+        transform.translation.x = transform.translation.x.min(width).max(-width);
+        transform.translation.y = transform.translation.y.min(height).max(-height);
+    }
 }
 
 fn wrap_stars(window: Res<WindowSize>, mut query: Query<(&Sprite, &mut Transform), With<Star>>) {

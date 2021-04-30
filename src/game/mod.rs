@@ -2,12 +2,14 @@ use bevy::prelude::*;
 
 use animation::AnimationPlugin;
 use collision::CollisionPlugin;
+use input::InputPlugin;
 use physics::PhysicsPlugin;
 use player::PlayerPlugin;
 use starfield::StarfieldPlugin;
 
 mod animation;
 mod collision;
+mod input;
 mod physics;
 mod player;
 mod starfield;
@@ -18,6 +20,7 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_plugin(AnimationPlugin)
             .add_plugin(CollisionPlugin)
+            .add_plugin(InputPlugin)
             .add_plugin(PhysicsPlugin)
             .add_plugin(PlayerPlugin)
             .add_plugin(StarfieldPlugin)
