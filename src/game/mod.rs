@@ -8,6 +8,7 @@ use player::PlayerPlugin;
 use starfield::StarfieldPlugin;
 
 mod animation;
+mod bullet;
 mod collision;
 mod input;
 mod physics;
@@ -45,7 +46,14 @@ impl SpriteScale {
         Self { scale }
     }
 
-    /// Get a transform translatied to a coordinate.
+    /// Get a transform translated to a coordinate.
+    pub fn translate(&self, translation: Vec3) -> Transform {
+        let mut transform = Transform::from_translation(translation);
+        transform.scale = Vec3::new(self.scale, self.scale, 0.0);
+        transform
+    }
+
+    /// Get a transform translated to a coordinate.
     pub fn xyz(&self, x: f32, y: f32, z: f32) -> Transform {
         let mut transform = Transform::from_xyz(x, y, z);
         transform.scale = Vec3::new(self.scale, self.scale, 0.0);

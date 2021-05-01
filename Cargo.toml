@@ -8,5 +8,5 @@ edition = "2018"
 rand = "0.8"
 
 [dependencies.bevy]
-features = ["dynamic"]
+features = ["dynamic", "wav"]
 version = "0.5"

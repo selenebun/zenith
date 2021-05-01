@@ -1,7 +1,8 @@
 use bevy::prelude::*;
 
-use crate::game::player::{Player, Speed};
-use crate::game::GameState;
+use crate::game::bullet::{Bullet, FireRate};
+use crate::game::player::{Player, PlayerFaction, Speed};
+use crate::game::{GameState, SpriteScale};
 
 pub struct InputPlugin;
 
@@ -9,8 +10,43 @@ impl Plugin for InputPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system_set(
             SystemSet::on_update(GameState::Playing)
+                .with_system(fire_bullets.system())
                 .with_system(move_player.system().label("move_player")),
         );
+    }
+}
+
+fn fire_bullets(
+    mut commands: Commands,
+    server: Res<AssetServer>,
+    audio: Res<Audio>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    keys: Res<Input<KeyCode>>,
+    scale: Res<SpriteScale>,
+    time: Res<Time>,
+    mut query: Query<(&mut FireRate, &Transform), With<Player>>,
+) {
+    for (mut fire_rate, transform) in query.iter_mut() {
+        // Fire when holding Z.
+        fire_rate.tick(time.delta());
+        if keys.pressed(KeyCode::Z) && fire_rate.finished() {
+            // Play audio.
+            let sound = server.load("sounds/fire.wav");
+            audio.play(sound);
+
+            for bullet in Bullet::Small.spawn(
+                &server,
+                &mut materials,
+                &scale,
+                transform.translation.truncate(),
+                90.0,
+                &[0.0],
+                12.0,
+                1.0,
+            ) {
+                commands.spawn_bundle(bullet).insert(PlayerFaction);
+            }
+        }
     }
 }
 

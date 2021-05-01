@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use crate::game::animation::AnimationTimer;
+use crate::game::bullet::FireRate;
 use crate::game::collision::SpriteSize;
 use crate::game::{GameState, SpriteScale, WindowSize};
 
@@ -16,6 +17,7 @@ impl Plugin for PlayerPlugin {
 
 #[derive(Bundle)]
 pub struct PlayerBundle {
+    pub fire_rate: FireRate,
     pub player: Player,
     pub speed: Speed,
     #[bundle]
@@ -26,6 +28,9 @@ pub struct PlayerBundle {
 
 #[derive(Debug)]
 pub struct Player;
+
+#[derive(Debug)]
+pub struct PlayerFaction;
 
 #[derive(Debug)]
 pub struct Speed(pub f32);
@@ -52,6 +57,7 @@ fn spawn_player(
     };
 
     commands.spawn_bundle(PlayerBundle {
+        fire_rate: FireRate::from_seconds(0.18),
         player: Player,
         speed: Speed(6.0),
         sprite: SpriteSheetBundle {
