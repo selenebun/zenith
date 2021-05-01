@@ -1,12 +1,14 @@
 use bevy::prelude::*;
 use bevy::utils::Duration;
 
+use crate::game::collision::DespawnOutside;
 use crate::game::physics::Velocity;
 use crate::game::SpriteScale;
 
 #[derive(Bundle)]
 pub struct BulletBundle {
     pub bullet: Bullet,
+    pub despawn_outside: DespawnOutside,
     #[bundle]
     pub sprite: SpriteBundle,
     pub velocity: Velocity,
@@ -75,6 +77,7 @@ impl Bullet {
 
         BulletBundle {
             bullet: self,
+            despawn_outside: DespawnOutside,
             sprite: SpriteBundle {
                 material,
                 transform: scale.translate(position.extend(z_index)),

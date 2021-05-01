@@ -12,6 +12,17 @@ pub struct SpriteSize {
     pub height: f32,
 }
 
+impl Plugin for CollisionPlugin {
+    fn build(&self, app: &mut AppBuilder) {
+        app.add_system_set(
+            SystemSet::on_update(GameState::Playing)
+                .with_system(bound_player.system().after("move_player")),
+        )
+        .add_system(despawn_outside.system())
+        .add_system(wrap_stars.system());
+    }
+}
+
 impl SpriteSize {
     /// Calculate the sprite size.
     pub fn new(width: f32, height: f32, scale: f32) -> Self {
@@ -22,15 +33,8 @@ impl SpriteSize {
     }
 }
 
-impl Plugin for CollisionPlugin {
-    fn build(&self, app: &mut AppBuilder) {
-        app.add_system_set(
-            SystemSet::on_update(GameState::Playing)
-                .with_system(bound_player.system().after("move_player")),
-        )
-        .add_system(wrap_stars.system());
-    }
-}
+#[derive(Debug)]
+pub struct DespawnOutside;
 
 /// Get the inner bound for a sprite within a region.
 pub fn inner_bound(dimension: f32, sprite: f32) -> f32 {
@@ -51,6 +55,24 @@ fn bound_player(
         let height = inner_bound(window.height, sprite.height);
         transform.translation.x = transform.translation.x.min(width).max(-width);
         transform.translation.y = transform.translation.y.min(height).max(-height);
+    }
+}
+
+fn despawn_outside(
+    mut commands: Commands,
+    window: Res<WindowSize>,
+    query: Query<(Entity, &Sprite, &Transform), With<DespawnOutside>>,
+) {
+    for (entity, sprite, transform) in query.iter() {
+        let width = outer_bound(window.width, sprite.size.x * transform.scale.x) + 12.0;
+        let height = outer_bound(window.height, sprite.size.y * transform.scale.y) + 12.0;
+        if transform.translation.x > width
+            || transform.translation.x < -width
+            || transform.translation.y > height
+            || transform.translation.y < -height
+        {
+            commands.entity(entity).despawn();
+        }
     }
 }
 
