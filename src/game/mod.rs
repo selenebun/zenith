@@ -8,6 +8,7 @@ use level::LevelPlugin;
 use physics::PhysicsPlugin;
 use player::PlayerPlugin;
 use starfield::StarfieldPlugin;
+use ui::UiPlugin;
 
 mod animation;
 mod bullet;
@@ -18,6 +19,7 @@ mod level;
 mod physics;
 mod player;
 mod starfield;
+mod ui;
 
 pub struct GamePlugin;
 
@@ -31,6 +33,7 @@ impl Plugin for GamePlugin {
             .add_plugin(PhysicsPlugin)
             .add_plugin(PlayerPlugin)
             .add_plugin(StarfieldPlugin)
+            .add_plugin(UiPlugin)
             .add_state(GameState::Playing)
             .add_startup_system(setup.system());
     }
@@ -86,6 +89,7 @@ impl WindowSize {
 fn setup(mut commands: Commands, windows: Res<Windows>) {
     // Set up cameras.
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+    commands.spawn_bundle(UiCameraBundle::default());
 
     // Set up sprite scale.
     commands.insert_resource(SpriteScale::new(1.5));
