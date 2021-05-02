@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use rand::prelude::*;
 
 use crate::game::animation::AnimationTimer;
-use crate::game::collision::{self, SpriteSize};
+use crate::game::collision::{self, DespawnOutside, SpriteSize};
 use crate::game::level::{CurrentLevel, EnemiesLeft, Level, SpawnTimer};
 use crate::game::physics::Velocity;
 use crate::game::{GameState, SpriteScale, WindowSize};
@@ -19,6 +19,7 @@ impl Plugin for EnemyPlugin {
 
 #[derive(Bundle)]
 pub struct EnemyBundle {
+    pub despawn_outside: DespawnOutside,
     pub enemy: Enemy,
     #[bundle]
     pub sprite: SpriteSheetBundle,
@@ -78,6 +79,7 @@ impl Enemy {
         };
 
         EnemyBundle {
+            despawn_outside: DespawnOutside,
             enemy: self,
             sprite: SpriteSheetBundle {
                 texture_atlas,

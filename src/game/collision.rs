@@ -61,9 +61,22 @@ fn bound_player(
 fn despawn_outside(
     mut commands: Commands,
     window: Res<WindowSize>,
-    query: Query<(Entity, &Sprite, &Transform), With<DespawnOutside>>,
+    sprite_sheets: Query<(Entity, &SpriteSize, &Transform), With<DespawnOutside>>,
+    sprites: Query<(Entity, &Sprite, &Transform), With<DespawnOutside>>,
 ) {
-    for (entity, sprite, transform) in query.iter() {
+    for (entity, sprite, transform) in sprite_sheets.iter() {
+        let width = outer_bound(window.width, sprite.width) + 12.0;
+        let height = outer_bound(window.height, sprite.height) + 12.0;
+        if transform.translation.x > width
+            || transform.translation.x < -width
+            || transform.translation.y > height
+            || transform.translation.y < -height
+        {
+            commands.entity(entity).despawn();
+        }
+    }
+
+    for (entity, sprite, transform) in sprites.iter() {
         let width = outer_bound(window.width, sprite.size.x * transform.scale.x) + 12.0;
         let height = outer_bound(window.height, sprite.size.y * transform.scale.y) + 12.0;
         if transform.translation.x > width
