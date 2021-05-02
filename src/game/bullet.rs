@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy::utils::Duration;
 
-use crate::game::collision::DespawnOutside;
+use crate::game::collision::{DespawnOutside, Hitbox};
 use crate::game::physics::Velocity;
 use crate::game::SpriteScale;
 
@@ -9,6 +9,8 @@ use crate::game::SpriteScale;
 pub struct BulletBundle {
     pub bullet: Bullet,
     pub despawn_outside: DespawnOutside,
+    pub damage: Damage,
+    pub hitbox: Hitbox,
     #[bundle]
     pub sprite: SpriteBundle,
     pub velocity: Velocity,
@@ -67,6 +69,10 @@ impl Bullet {
         speed: f32,
         z_index: f32,
     ) -> BulletBundle {
+        let (damage, radius) = match self {
+            Self::Small => (1, 1.0),
+        };
+
         // Calculate velocity.
         let velocity = Velocity({
             let angle = angle.to_radians();
@@ -77,7 +83,11 @@ impl Bullet {
 
         BulletBundle {
             bullet: self,
+            damage: Damage(damage),
             despawn_outside: DespawnOutside,
+            hitbox: Hitbox {
+                radius: radius * scale.scale,
+            },
             sprite: SpriteBundle {
                 material,
                 transform: scale.translate(position.extend(z_index)),
@@ -87,6 +97,9 @@ impl Bullet {
         }
     }
 }
+
+#[derive(Debug)]
+pub struct Damage(pub u32);
 
 #[derive(Debug)]
 pub enum FireRate {

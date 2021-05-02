@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 use rand::prelude::*;
 
-use crate::game::animation::AnimationTimer;
-use crate::game::collision::{self, DespawnOutside, SpriteSize};
+use crate::game::animation::{self, AnimationTimer};
+use crate::game::collision::{self, DespawnOutside, Hitbox, SpriteSize};
 use crate::game::level::{CurrentLevel, EnemiesLeft, Level, SpawnTimer};
 use crate::game::physics::Velocity;
 use crate::game::{GameState, SpriteScale, WindowSize};
@@ -12,7 +12,9 @@ pub struct EnemyPlugin;
 impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system_set(
-            SystemSet::on_update(GameState::Playing).with_system(spawn_enemies.system()),
+            SystemSet::on_update(GameState::Playing)
+                .with_system(explode_enemies.system())
+                .with_system(spawn_enemies.system()),
         );
     }
 }
@@ -21,6 +23,8 @@ impl Plugin for EnemyPlugin {
 pub struct EnemyBundle {
     pub despawn_outside: DespawnOutside,
     pub enemy: Enemy,
+    pub health: Health,
+    pub hitbox: Hitbox,
     #[bundle]
     pub sprite: SpriteSheetBundle,
     pub sprite_size: SpriteSize,
@@ -43,7 +47,7 @@ impl Enemy {
         window: &WindowSize,
     ) -> EnemyBundle {
         let mut rng = rand::thread_rng();
-        let (atlas, velocity) = match self {
+        let (atlas, health, radius, velocity) = match self {
             Self::Basic => {
                 // Get texture atlas.
                 let atlas = {
@@ -57,7 +61,7 @@ impl Enemy {
                     Velocity(Vec2::new(0.0, -speed))
                 };
 
-                (atlas, velocity)
+                (atlas, 1, 31.0, velocity)
             }
         };
 
@@ -81,6 +85,8 @@ impl Enemy {
         EnemyBundle {
             despawn_outside: DespawnOutside,
             enemy: self,
+            health: Health::new(health),
+            hitbox: Hitbox { radius },
             sprite: SpriteSheetBundle {
                 texture_atlas,
                 transform,
@@ -89,6 +95,44 @@ impl Enemy {
             sprite_size,
             timer: AnimationTimer::new(0.1),
             velocity,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Health {
+    pub current: u32,
+}
+
+impl Health {
+    /// Start at max health.
+    pub fn new(amount: u32) -> Self {
+        Self { current: amount }
+    }
+
+    /// Subtract damage from current health.
+    pub fn damage(&mut self, amount: u32) {
+        self.current = self.current.saturating_sub(amount);
+    }
+}
+
+fn explode_enemies(
+    mut commands: Commands,
+    server: Res<AssetServer>,
+    audio: Res<Audio>,
+    mut atlases: ResMut<Assets<TextureAtlas>>,
+    query: Query<(Entity, &Health, &Transform)>,
+) {
+    for (entity, health, transform) in query.iter() {
+        // Explode once health reaches zero.
+        if health.current == 0 {
+            commands.entity(entity).despawn();
+            commands.spawn_bundle(animation::spawn_explosion(
+                &server,
+                &audio,
+                &mut atlases,
+                *transform,
+            ));
         }
     }
 }

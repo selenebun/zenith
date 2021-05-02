@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 
-use crate::game::player::Player;
+use crate::game::bullet::{Bullet, Damage};
+use crate::game::enemy::{Enemy, Health};
+use crate::game::player::{Player, PlayerFaction};
 use crate::game::starfield::Star;
 use crate::game::{GameState, WindowSize};
 
@@ -16,7 +18,8 @@ impl Plugin for CollisionPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system_set(
             SystemSet::on_update(GameState::Playing)
-                .with_system(bound_player.system().after("move_player")),
+                .with_system(bound_player.system().after("move_player"))
+                .with_system(collide_with_player_bullets.system()),
         )
         .add_system(despawn_outside.system())
         .add_system(wrap_stars.system());
@@ -35,6 +38,11 @@ impl SpriteSize {
 
 #[derive(Debug)]
 pub struct DespawnOutside;
+
+#[derive(Debug)]
+pub struct Hitbox {
+    pub radius: f32,
+}
 
 /// Get the inner bound for a sprite within a region.
 pub fn inner_bound(dimension: f32, sprite: f32) -> f32 {
@@ -55,6 +63,27 @@ fn bound_player(
         let height = inner_bound(window.height, sprite.height);
         transform.translation.x = transform.translation.x.min(width).max(-width);
         transform.translation.y = transform.translation.y.min(height).max(-height);
+    }
+}
+
+fn collide_with_player_bullets(
+    mut commands: Commands,
+    bullets: Query<(Entity, &Damage, &Hitbox, &Transform), (With<Bullet>, With<PlayerFaction>)>,
+    mut enemies: Query<(&mut Health, &Hitbox, &Transform), With<Enemy>>,
+) {
+    for (mut health, enemy_hitbox, enemy_transform) in enemies.iter_mut() {
+        for (entity, damage, hitbox, transform) in bullets.iter() {
+            // Check for collision.
+            let distance = enemy_transform
+                .translation
+                .truncate()
+                .distance_squared(transform.translation.truncate());
+            let radius_sum = enemy_hitbox.radius + hitbox.radius;
+            if distance < radius_sum * radius_sum {
+                commands.entity(entity).despawn();
+                health.damage(damage.0);
+            }
+        }
     }
 }
 
