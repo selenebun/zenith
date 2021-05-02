@@ -141,7 +141,7 @@ fn explode_enemies(
     server: Res<AssetServer>,
     audio: Res<Audio>,
     mut atlases: ResMut<Assets<TextureAtlas>>,
-    query: Query<(Entity, &Health, &Transform)>,
+    query: Query<(Entity, &Health, &Transform), (With<Enemy>, Changed<Health>)>,
 ) {
     for (entity, health, transform) in query.iter() {
         // Explode once health reaches zero.
