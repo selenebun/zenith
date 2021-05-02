@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::game::bullet::{Bullet, Damage};
-use crate::game::enemy::{Enemy, Health};
+use crate::game::enemy::{Enemy, EnemyFaction, Health};
 use crate::game::player::{Player, PlayerFaction};
 use crate::game::starfield::Star;
 use crate::game::{GameState, WindowSize};
@@ -13,6 +13,11 @@ impl Plugin for CollisionPlugin {
         app.add_system_set(
             SystemSet::on_update(GameState::Playing)
                 .with_system(bound_player.system().after("move_player"))
+                .with_system(
+                    collide_with_enemy_bullets
+                        .system()
+                        .label("collide_with_enemy_bullets"),
+                )
                 .with_system(collide_with_player_bullets.system()),
         )
         .add_system(despawn_outside.system())
@@ -63,6 +68,40 @@ fn bound_player(
         let height = inner_bound(window.height, sprite.height);
         transform.translation.x = transform.translation.x.min(width).max(-width);
         transform.translation.y = transform.translation.y.min(height).max(-height);
+    }
+}
+
+fn collide_with_enemy_bullets(
+    mut commands: Commands,
+    server: Res<AssetServer>,
+    audio: Res<Audio>,
+    mut state: ResMut<State<GameState>>,
+    bullets: Query<(Entity, &Damage, &Hitbox, &Transform), (With<Bullet>, With<EnemyFaction>)>,
+    mut player: Query<(&mut Health, &Hitbox, &Transform), With<Player>>,
+) {
+    let (mut health, player_hitbox, player_transform) =
+        player.single_mut().expect("expected a single player");
+
+    for (entity, damage, hitbox, transform) in bullets.iter() {
+        // Check for collision.
+        let distance = player_transform
+            .translation
+            .truncate()
+            .distance_squared(transform.translation.truncate());
+        let radius_sum = player_hitbox.radius + hitbox.radius;
+        if distance < radius_sum * radius_sum {
+            commands.entity(entity).despawn();
+
+            // Play audio.
+            let sound = server.load("sounds/player_hit.wav");
+            audio.play(sound);
+
+            // Deal damage.
+            health.damage(damage.0);
+            if health.current == 0 {
+                state.set(GameState::GameOver).unwrap();
+            }
+        }
     }
 }
 

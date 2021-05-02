@@ -25,8 +25,10 @@ Below is a list of all the freely available assets that were used:
 
 * [Explosion sound] by Luke.RUSTLTD.
 * [Explosion sprite sheet] by JROB774.
+* [Player damage sound] by Bart Kelsey.
 
 [Bevy]: https://bevyengine.org
 [Explosion sound]: https://opengameart.org/content/bombexplosion8bit
 [Explosion sprite sheet]: https://opengameart.org/content/pixel-explosion-12-frames
+[Player damage sound]: https://opengameart.org/content/8-bit-platformer-sfx
 [setup guide]: https://bevyengine.org/learn/book/getting-started/setup

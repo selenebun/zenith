@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
-use crate::game::animation::AnimationTimer;
+use crate::game::animation::{self, AnimationTimer, GameOverAnimation};
 use crate::game::bullet::FireRate;
-use crate::game::collision::SpriteSize;
+use crate::game::collision::{Hitbox, SpriteSize};
 use crate::game::enemy::Health;
 use crate::game::ui::HealthBar;
 use crate::game::{GameState, SpriteScale, WindowSize};
@@ -16,6 +16,9 @@ impl Plugin for PlayerPlugin {
         )
         .add_system_set(
             SystemSet::on_update(GameState::Playing).with_system(update_health_bar.system()),
+        )
+        .add_system_set(
+            SystemSet::on_enter(GameState::GameOver).with_system(explode_player.system()),
         );
     }
 }
@@ -27,6 +30,7 @@ pub struct Player;
 pub struct PlayerBundle {
     pub fire_rate: FireRate,
     pub health: Health,
+    pub hitbox: Hitbox,
     pub player: Player,
     pub speed: Speed,
     #[bundle]
@@ -40,6 +44,26 @@ pub struct PlayerFaction;
 
 #[derive(Debug)]
 pub struct Speed(pub f32);
+
+fn explode_player(
+    mut commands: Commands,
+    server: Res<AssetServer>,
+    audio: Res<Audio>,
+    mut atlases: ResMut<Assets<TextureAtlas>>,
+    query: Query<(Entity, &Transform), With<Player>>,
+) {
+    let (entity, transform) = query.single().expect("expected a single player");
+
+    commands.entity(entity).despawn();
+    commands
+        .spawn_bundle(animation::spawn_explosion(
+            &server,
+            &audio,
+            &mut atlases,
+            *transform,
+        ))
+        .insert(GameOverAnimation);
+}
 
 fn spawn_player(
     mut commands: Commands,
@@ -65,6 +89,7 @@ fn spawn_player(
     commands.spawn_bundle(PlayerBundle {
         fire_rate: FireRate::from_seconds(0.18),
         health: Health::new(5),
+        hitbox: Hitbox { radius: 9.0 },
         player: Player,
         speed: Speed(6.0),
         sprite: SpriteSheetBundle {

@@ -4,12 +4,16 @@ use bevy::prelude::*;
 use bevy::utils::Duration;
 
 use crate::game::enemy::Enemy;
+use crate::game::GameState;
 
 pub struct LevelPlugin;
 
 impl Plugin for LevelPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_startup_system(setup.system());
+        app.add_system_set(
+            SystemSet::on_exit(GameState::GameOver).with_system(reset_level.system()),
+        )
+        .add_startup_system(setup.system());
     }
 }
 
@@ -65,6 +69,23 @@ pub struct Level {
     pub delay: Range<u64>,
     pub enemies: Vec<(Enemy, u32)>,
     pub enemy_limit: u32,
+}
+
+fn reset_level(
+    levels: Res<Vec<Level>>,
+    mut query: Query<(&CurrentLevel, &mut EnemiesLeft, &mut SpawnTimer)>,
+) {
+    let (current, mut enemies_left, mut timer) =
+        query.single_mut().expect("expected a single level");
+
+    // Get current level.
+    let level = match current.level {
+        Some(index) => &levels[index],
+        None => return,
+    };
+
+    enemies_left.count = level.enemy_limit;
+    timer.reset(1000);
 }
 
 fn setup(mut commands: Commands) {

@@ -12,6 +12,10 @@ impl Plugin for AnimationPlugin {
             SystemSet::on_update(GameState::Playing)
                 .with_system(animate_sprites.system().label("animate_sprites")),
         )
+        .add_system_set(
+            SystemSet::on_update(GameState::GameOver)
+                .with_system(animate_sprites.system().label("animate_sprites")),
+        )
         .add_system(
             despawn_finished_animations
                 .system()
@@ -79,6 +83,9 @@ pub struct ExplosionBundle {
     timer: AnimationTimer,
 }
 
+#[derive(Debug)]
+pub struct GameOverAnimation;
+
 pub fn spawn_explosion(
     server: &AssetServer,
     audio: &Audio,
@@ -136,12 +143,21 @@ fn animate_sprites(
 
 fn despawn_finished_animations(
     mut commands: Commands,
-    query: Query<(Entity, &AnimationTimeLimit, &AnimationTimer)>,
+    mut state: ResMut<State<GameState>>,
+    query: Query<(
+        Entity,
+        &AnimationTimeLimit,
+        &AnimationTimer,
+        Option<&GameOverAnimation>,
+    )>,
 ) {
-    for (entity, time_limit, timer) in query.iter() {
+    for (entity, time_limit, timer, game_over_animation) in query.iter() {
         // Despawn if animation is finished.
         if timer.elapsed(time_limit.duration) {
             commands.entity(entity).despawn();
+            if game_over_animation.is_some() {
+                state.set(GameState::Playing).unwrap();
+            }
         }
     }
 }

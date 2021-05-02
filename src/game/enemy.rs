@@ -201,6 +201,7 @@ fn spawn_enemies(
 ) {
     let (mut current, mut enemies_left, mut timer) =
         query.single_mut().expect("expected a single level");
+
     // Skip spawning if there are no more levels.
     let (mut index, level) = match current.level {
         Some(index) => (index, &levels[index]),
@@ -216,6 +217,8 @@ fn spawn_enemies(
         } else {
             current.level = None;
         }
+
+        return;
     }
 
     // Tick spawn timer.
