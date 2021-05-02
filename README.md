@@ -19,5 +19,14 @@ Once the above steps have been completed, the game can be compiled and run with
 | Arrow keys | Move               |
 | Z          | Fire bullets       |
 
+## Attribution
+
+Below is a list of all the freely available assets that were used:
+
+* [Explosion sound] by Luke.RUSTLTD.
+* [Explosion sprite sheet] by JROB774.
+
 [Bevy]: https://bevyengine.org
+[Explosion sound]: https://opengameart.org/content/bombexplosion8bit
+[Explosion sprite sheet]: https://opengameart.org/content/pixel-explosion-12-frames
 [setup guide]: https://bevyengine.org/learn/book/getting-started/setup
