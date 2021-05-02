@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::utils::Duration;
 
 use crate::game::animation::{self, AnimationTimer, GameOverAnimation};
 use crate::game::bullet::FireRate;
@@ -15,11 +16,45 @@ impl Plugin for PlayerPlugin {
             SystemSet::on_enter(GameState::Playing).with_system(spawn_player.system()),
         )
         .add_system_set(
-            SystemSet::on_update(GameState::Playing).with_system(update_health_bar.system()),
+            SystemSet::on_update(GameState::Playing).with_system(
+                update_health_bar
+                    .system()
+                    .after("collide_with_enemy_bullets"),
+            ),
         )
         .add_system_set(
             SystemSet::on_enter(GameState::GameOver).with_system(explode_player.system()),
         );
+    }
+}
+
+#[derive(Debug)]
+pub struct InvulnTimer {
+    timer: Timer,
+}
+
+impl InvulnTimer {
+    /// Create a new timer.
+    pub fn new(seconds: f32) -> Self {
+        let mut timer = Timer::from_seconds(seconds, false);
+        timer.set_elapsed(timer.duration());
+
+        Self { timer }
+    }
+
+    /// Check if the timer is finished.
+    pub fn finished(&self) -> bool {
+        self.timer.finished()
+    }
+
+    /// Tick the timer.
+    pub fn tick(&mut self, delta: Duration) {
+        self.timer.tick(delta);
+    }
+
+    /// Reset the timer.
+    pub fn reset(&mut self) {
+        self.timer.reset()
     }
 }
 
@@ -31,6 +66,7 @@ pub struct PlayerBundle {
     pub fire_rate: FireRate,
     pub health: Health,
     pub hitbox: Hitbox,
+    pub invuln_timer: InvulnTimer,
     pub player: Player,
     pub speed: Speed,
     #[bundle]
@@ -90,6 +126,7 @@ fn spawn_player(
         fire_rate: FireRate::from_seconds(0.18),
         health: Health::new(5),
         hitbox: Hitbox { radius: 9.0 },
+        invuln_timer: InvulnTimer::new(0.6),
         player: Player,
         speed: Speed(6.0),
         sprite: SpriteSheetBundle {

@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::game::bullet::{Bullet, Damage};
 use crate::game::enemy::{Enemy, EnemyFaction, Health};
-use crate::game::player::{Player, PlayerFaction};
+use crate::game::player::{InvulnTimer, Player, PlayerFaction};
 use crate::game::starfield::Star;
 use crate::game::{GameState, WindowSize};
 
@@ -76,12 +76,15 @@ fn collide_with_enemy_bullets(
     server: Res<AssetServer>,
     audio: Res<Audio>,
     mut state: ResMut<State<GameState>>,
+    time: Res<Time>,
     bullets: Query<(Entity, &Damage, &Hitbox, &Transform), (With<Bullet>, With<EnemyFaction>)>,
-    mut player: Query<(&mut Health, &Hitbox, &Transform), With<Player>>,
+    mut player: Query<(&mut Health, &Hitbox, &mut InvulnTimer, &Transform), With<Player>>,
 ) {
-    let (mut health, player_hitbox, player_transform) =
+    let (mut health, player_hitbox, mut invuln_timer, player_transform) =
         player.single_mut().expect("expected a single player");
 
+    // Tick invulnerability timer.
+    invuln_timer.tick(time.delta());
     for (entity, damage, hitbox, transform) in bullets.iter() {
         // Check for collision.
         let distance = player_transform
@@ -92,14 +95,20 @@ fn collide_with_enemy_bullets(
         if distance < radius_sum * radius_sum {
             commands.entity(entity).despawn();
 
-            // Play audio.
-            let sound = server.load("sounds/player_hit.wav");
-            audio.play(sound);
+            // Check if currently vulnerable.
+            if invuln_timer.finished() {
+                // Play audio.
+                let sound = server.load("sounds/player_hit.wav");
+                audio.play(sound);
 
-            // Deal damage.
-            health.damage(damage.0);
-            if health.current == 0 {
-                state.set(GameState::GameOver).unwrap();
+                // Deal damage.
+                health.damage(damage.0);
+                if health.current == 0 {
+                    state.set(GameState::GameOver).unwrap();
+                }
+
+                // Reset invulnerability timer.
+                invuln_timer.reset();
             }
         }
     }
