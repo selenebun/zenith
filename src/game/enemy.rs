@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use rand::prelude::*;
 
 use crate::game::animation::{self, AnimationTimer};
+use crate::game::bullet::{Bullet, FireRate};
 use crate::game::collision::{self, DespawnOutside, Hitbox, SpriteSize};
 use crate::game::level::{CurrentLevel, EnemiesLeft, Level, SpawnTimer};
 use crate::game::physics::Velocity;
@@ -14,9 +15,15 @@ impl Plugin for EnemyPlugin {
         app.add_system_set(
             SystemSet::on_update(GameState::Playing)
                 .with_system(explode_enemies.system())
+                .with_system(fire_bullets.system())
                 .with_system(spawn_enemies.system()),
         );
     }
+}
+
+#[derive(Debug)]
+pub enum Attack {
+    Basic,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -34,12 +41,18 @@ impl Enemy {
         window: &WindowSize,
     ) -> EnemyBundle {
         let mut rng = rand::thread_rng();
-        let (atlas, health, radius, velocity) = match self {
+        let (atlas, attack, fire_rate, health, radius, velocity) = match self {
             Self::Basic => {
                 // Get texture atlas.
                 let atlas = {
                     let asset = server.load("textures/enemies/basic.png");
                     TextureAtlas::from_grid(asset, Vec2::new(50.0, 43.0), 4, 1)
+                };
+
+                // Calculate fire rate.
+                let fire_rate = {
+                    let seconds = rng.gen_range(0.4..0.55);
+                    FireRate::from_seconds(seconds)
                 };
 
                 // Calculate velocity.
@@ -48,7 +61,7 @@ impl Enemy {
                     Velocity(Vec2::new(0.0, -speed))
                 };
 
-                (atlas, 1, 31.0, velocity)
+                (atlas, Attack::Basic, fire_rate, 1, 31.0, velocity)
             }
         };
 
@@ -70,8 +83,10 @@ impl Enemy {
         };
 
         EnemyBundle {
+            attack,
             despawn_outside: DespawnOutside,
             enemy: self,
+            fire_rate,
             health: Health::new(health),
             hitbox: Hitbox { radius },
             sprite: SpriteSheetBundle {
@@ -88,8 +103,10 @@ impl Enemy {
 
 #[derive(Bundle)]
 pub struct EnemyBundle {
+    pub attack: Attack,
     pub despawn_outside: DespawnOutside,
     pub enemy: Enemy,
+    pub fire_rate: FireRate,
     pub health: Health,
     pub hitbox: Hitbox,
     #[bundle]
@@ -98,6 +115,9 @@ pub struct EnemyBundle {
     pub timer: AnimationTimer,
     pub velocity: Velocity,
 }
+
+#[derive(Debug)]
+pub struct EnemyFaction;
 
 #[derive(Debug)]
 pub struct Health {
@@ -133,6 +153,38 @@ fn explode_enemies(
                 &mut atlases,
                 *transform,
             ));
+        }
+    }
+}
+
+fn fire_bullets(
+    mut commands: Commands,
+    server: Res<AssetServer>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    scale: Res<SpriteScale>,
+    time: Res<Time>,
+    mut query: Query<(&Attack, &mut FireRate, &Transform), With<Enemy>>,
+) {
+    for (attack, mut fire_rate, transform) in query.iter_mut() {
+        // Tick fire rate timer.
+        fire_rate.tick(time.delta());
+        if fire_rate.finished() {
+            let bullets = match attack {
+                Attack::Basic => Bullet::Basic.spawn(
+                    &server,
+                    &mut materials,
+                    &scale,
+                    transform.translation.truncate(),
+                    -90.0,
+                    &[0.0],
+                    8.0,
+                    4.0,
+                ),
+            };
+
+            for bullet in bullets {
+                commands.spawn_bundle(bullet).insert(EnemyFaction);
+            }
         }
     }
 }

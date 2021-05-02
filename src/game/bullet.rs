@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy::utils::Duration;
+use rand::prelude::*;
 
 use crate::game::collision::{DespawnOutside, Hitbox};
 use crate::game::physics::Velocity;
@@ -7,6 +8,7 @@ use crate::game::SpriteScale;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Bullet {
+    Basic,
     Small,
 }
 
@@ -24,6 +26,7 @@ impl Bullet {
         z_index: f32,
     ) -> Vec<BulletBundle> {
         let url = match self {
+            Self::Basic => "textures/bullets/basic.png",
             Self::Small => "textures/bullets/small.png",
         };
 
@@ -59,6 +62,7 @@ impl Bullet {
         z_index: f32,
     ) -> BulletBundle {
         let (damage, radius) = match self {
+            Self::Basic => (1, 3.0),
             Self::Small => (1, 1.0),
         };
 
@@ -103,6 +107,7 @@ pub struct Damage(pub u32);
 
 #[derive(Debug)]
 pub enum FireRate {
+    Random(f32),
     Regular(Timer),
 }
 
@@ -115,6 +120,10 @@ impl FireRate {
     /// Check if able to fire.
     pub fn finished(&self) -> bool {
         match self {
+            Self::Random(chance) => {
+                let mut rng = rand::thread_rng();
+                rng.gen::<f32>() < *chance
+            }
             Self::Regular(timer) => timer.finished(),
         }
     }
