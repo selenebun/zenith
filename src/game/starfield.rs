@@ -12,6 +12,9 @@ impl Plugin for StarfieldPlugin {
     }
 }
 
+#[derive(Debug)]
+pub struct Star;
+
 #[derive(Bundle)]
 pub struct StarBundle {
     pub star: Star,
@@ -19,9 +22,6 @@ pub struct StarBundle {
     pub sprite: SpriteBundle,
     pub velocity: Velocity,
 }
-
-#[derive(Debug)]
-pub struct Star;
 
 fn setup(
     mut commands: Commands,

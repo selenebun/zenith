@@ -15,6 +15,9 @@ impl Plugin for PlayerPlugin {
     }
 }
 
+#[derive(Debug)]
+pub struct Player;
+
 #[derive(Bundle)]
 pub struct PlayerBundle {
     pub fire_rate: FireRate,
@@ -25,9 +28,6 @@ pub struct PlayerBundle {
     pub sprite_size: SpriteSize,
     pub timer: AnimationTimer,
 }
-
-#[derive(Debug)]
-pub struct Player;
 
 #[derive(Debug)]
 pub struct PlayerFaction;

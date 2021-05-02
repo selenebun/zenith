@@ -9,8 +9,13 @@ pub struct LevelPlugin;
 
 impl Plugin for LevelPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_startup_system(level_setup.system());
+        app.add_startup_system(setup.system());
     }
+}
+
+#[derive(Debug)]
+pub struct CurrentLevel {
+    pub level: Option<usize>,
 }
 
 #[derive(Bundle)]
@@ -18,11 +23,6 @@ pub struct CurrentLevelBundle {
     pub enemies_left: EnemiesLeft,
     pub level: CurrentLevel,
     pub timer: SpawnTimer,
-}
-
-#[derive(Debug)]
-pub struct CurrentLevel {
-    pub level: Option<usize>,
 }
 
 #[derive(Debug)]
@@ -67,7 +67,7 @@ pub struct Level {
     pub enemy_limit: u32,
 }
 
-fn level_setup(mut commands: Commands) {
+fn setup(mut commands: Commands) {
     // Initialize levels.
     let levels = vec![Level {
         delay: 800..3200,

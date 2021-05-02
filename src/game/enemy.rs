@@ -19,19 +19,6 @@ impl Plugin for EnemyPlugin {
     }
 }
 
-#[derive(Bundle)]
-pub struct EnemyBundle {
-    pub despawn_outside: DespawnOutside,
-    pub enemy: Enemy,
-    pub health: Health,
-    pub hitbox: Hitbox,
-    #[bundle]
-    pub sprite: SpriteSheetBundle,
-    pub sprite_size: SpriteSize,
-    pub timer: AnimationTimer,
-    pub velocity: Velocity,
-}
-
 #[derive(Clone, Copy, Debug)]
 pub enum Enemy {
     Basic,
@@ -97,6 +84,19 @@ impl Enemy {
             velocity,
         }
     }
+}
+
+#[derive(Bundle)]
+pub struct EnemyBundle {
+    pub despawn_outside: DespawnOutside,
+    pub enemy: Enemy,
+    pub health: Health,
+    pub hitbox: Hitbox,
+    #[bundle]
+    pub sprite: SpriteSheetBundle,
+    pub sprite_size: SpriteSize,
+    pub timer: AnimationTimer,
+    pub velocity: Velocity,
 }
 
 #[derive(Debug)]

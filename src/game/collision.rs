@@ -8,12 +8,6 @@ use crate::game::{GameState, WindowSize};
 
 pub struct CollisionPlugin;
 
-#[derive(Debug)]
-pub struct SpriteSize {
-    pub width: f32,
-    pub height: f32,
-}
-
 impl Plugin for CollisionPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system_set(
@@ -26,6 +20,20 @@ impl Plugin for CollisionPlugin {
     }
 }
 
+#[derive(Debug)]
+pub struct DespawnOutside;
+
+#[derive(Debug)]
+pub struct Hitbox {
+    pub radius: f32,
+}
+
+#[derive(Debug)]
+pub struct SpriteSize {
+    pub width: f32,
+    pub height: f32,
+}
+
 impl SpriteSize {
     /// Calculate the sprite size.
     pub fn new(width: f32, height: f32, scale: f32) -> Self {
@@ -34,14 +42,6 @@ impl SpriteSize {
             height: height * scale,
         }
     }
-}
-
-#[derive(Debug)]
-pub struct DespawnOutside;
-
-#[derive(Debug)]
-pub struct Hitbox {
-    pub radius: f32,
 }
 
 /// Get the inner bound for a sprite within a region.

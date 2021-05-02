@@ -5,17 +5,6 @@ use crate::game::collision::{DespawnOutside, Hitbox};
 use crate::game::physics::Velocity;
 use crate::game::SpriteScale;
 
-#[derive(Bundle)]
-pub struct BulletBundle {
-    pub bullet: Bullet,
-    pub despawn_outside: DespawnOutside,
-    pub damage: Damage,
-    pub hitbox: Hitbox,
-    #[bundle]
-    pub sprite: SpriteBundle,
-    pub velocity: Velocity,
-}
-
 #[derive(Clone, Copy, Debug)]
 pub enum Bullet {
     Small,
@@ -96,6 +85,17 @@ impl Bullet {
             velocity,
         }
     }
+}
+
+#[derive(Bundle)]
+pub struct BulletBundle {
+    pub bullet: Bullet,
+    pub despawn_outside: DespawnOutside,
+    pub damage: Damage,
+    pub hitbox: Hitbox,
+    #[bundle]
+    pub sprite: SpriteBundle,
+    pub velocity: Velocity,
 }
 
 #[derive(Debug)]
