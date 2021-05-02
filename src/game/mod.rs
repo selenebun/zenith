@@ -2,7 +2,9 @@ use bevy::prelude::*;
 
 use animation::AnimationPlugin;
 use collision::CollisionPlugin;
+use enemy::EnemyPlugin;
 use input::InputPlugin;
+use level::LevelPlugin;
 use physics::PhysicsPlugin;
 use player::PlayerPlugin;
 use starfield::StarfieldPlugin;
@@ -10,7 +12,9 @@ use starfield::StarfieldPlugin;
 mod animation;
 mod bullet;
 mod collision;
+mod enemy;
 mod input;
+mod level;
 mod physics;
 mod player;
 mod starfield;
@@ -21,7 +25,9 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_plugin(AnimationPlugin)
             .add_plugin(CollisionPlugin)
+            .add_plugin(EnemyPlugin)
             .add_plugin(InputPlugin)
+            .add_plugin(LevelPlugin)
             .add_plugin(PhysicsPlugin)
             .add_plugin(PlayerPlugin)
             .add_plugin(StarfieldPlugin)
