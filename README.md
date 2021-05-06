@@ -15,6 +15,7 @@ Once the above steps have been completed, the game can be compiled and run with
 
 | Key        | Action             |
 | ---------- | ------------------ |
+| Escape     | Pause game         |
 | Left shift | Slow down movement |
 | Arrow keys | Move               |
 | Z          | Fire bullets       |
