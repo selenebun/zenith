@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use animation::{AnimationPlugin, AnimationTimer};
-use bullet::Bullet;
+use bullet::{Bullet, BulletPlugin};
 use collision::CollisionPlugin;
 use enemy::{Enemy, EnemyPlugin};
 use input::InputPlugin;
@@ -27,6 +27,7 @@ pub struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_plugin(AnimationPlugin)
+            .add_plugin(BulletPlugin)
             .add_plugin(CollisionPlugin)
             .add_plugin(EnemyPlugin)
             .add_plugin(InputPlugin)

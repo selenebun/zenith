@@ -39,6 +39,8 @@ fn fire_bullets(
                 &mut materials,
                 &scale,
                 transform.translation.truncate(),
+                Vec2::ZERO,
+                Vec2::ZERO,
                 90.0,
                 &[0.0],
                 12.0,

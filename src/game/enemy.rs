@@ -16,6 +16,7 @@ impl Plugin for EnemyPlugin {
             SystemSet::on_update(GameState::Playing)
                 .with_system(explode_enemies.system())
                 .with_system(fire_bullets.system())
+                .with_system(move_enemies.system())
                 .with_system(spawn_enemies.system()),
         );
     }
@@ -24,11 +25,19 @@ impl Plugin for EnemyPlugin {
 #[derive(Debug)]
 pub enum Attack {
     Basic,
+    Bomb,
+}
+
+#[derive(Debug)]
+pub enum DeathBehavior {
+    None,
+    Star,
 }
 
 #[derive(Clone, Copy, Debug)]
 pub enum Enemy {
     Basic,
+    Bomber,
 }
 
 impl Enemy {
@@ -41,29 +50,64 @@ impl Enemy {
         window: &WindowSize,
     ) -> EnemyBundle {
         let mut rng = rand::thread_rng();
-        let (atlas, attack, fire_rate, health, radius, velocity) = match self {
-            Self::Basic => {
-                // Get texture atlas.
-                let atlas = {
-                    let asset = server.load("textures/enemies/basic.png");
-                    TextureAtlas::from_grid(asset, Vec2::new(50.0, 43.0), 4, 1)
-                };
+        let (atlas, attack, death_behavior, fire_rate, health, movement, radius, velocity) =
+            match self {
+                Self::Basic => {
+                    // Get texture atlas.
+                    let atlas = {
+                        let asset = server.load("textures/enemies/basic.png");
+                        TextureAtlas::from_grid(asset, Vec2::new(50.0, 43.0), 4, 1)
+                    };
 
-                // Calculate fire rate.
-                let fire_rate = {
-                    let seconds = rng.gen_range(0.4..0.55);
-                    FireRate::from_seconds(seconds)
-                };
+                    // Calculate fire rate.
+                    let fire_rate = {
+                        let seconds = rng.gen_range(0.4..0.55);
+                        FireRate::from_seconds(seconds)
+                    };
 
-                // Calculate velocity.
-                let velocity = {
-                    let speed = rng.gen_range(1.0..2.0);
-                    Velocity(Vec2::new(0.0, -speed))
-                };
+                    // Calculate velocity.
+                    let velocity = Velocity({
+                        let speed = rng.gen_range(1.0..2.0);
+                        Vec2::new(0.0, -speed)
+                    });
 
-                (atlas, Attack::Basic, fire_rate, 1, 31.0, velocity)
-            }
-        };
+                    (
+                        atlas,
+                        Attack::Basic,
+                        DeathBehavior::None,
+                        fire_rate,
+                        1,
+                        Movement::Down,
+                        31.0,
+                        velocity,
+                    )
+                }
+                Self::Bomber => {
+                    // Get texture atlas.
+                    let atlas = {
+                        let asset = server.load("textures/enemies/bomber.png");
+                        TextureAtlas::from_grid(asset, Vec2::new(52.0, 31.0), 4, 1)
+                    };
+
+                    // Calculate velocity.
+                    let velocity = Velocity({
+                        let speed = rng.gen_range(1.5..2.0);
+                        let sign = if rng.gen::<f32>() < 0.5 { 1.0 } else { -1.0 };
+                        Vec2::new(speed * sign, -speed / 4.0)
+                    });
+
+                    (
+                        atlas,
+                        Attack::Bomb,
+                        DeathBehavior::Star,
+                        FireRate::Random(0.005),
+                        2,
+                        Movement::Strafe,
+                        31.0,
+                        velocity,
+                    )
+                }
+            };
 
         // Get texture atlas handle.
         let texture_atlas = atlases.add(atlas);
@@ -84,11 +128,13 @@ impl Enemy {
 
         EnemyBundle {
             attack,
+            death_behavior,
             despawn_outside: DespawnOutside,
             enemy: self,
             fire_rate,
             health: Health::new(health),
             hitbox: Hitbox { radius },
+            movement,
             sprite: SpriteSheetBundle {
                 texture_atlas,
                 transform,
@@ -104,11 +150,13 @@ impl Enemy {
 #[derive(Bundle)]
 pub struct EnemyBundle {
     pub attack: Attack,
+    pub death_behavior: DeathBehavior,
     pub despawn_outside: DespawnOutside,
     pub enemy: Enemy,
     pub fire_rate: FireRate,
     pub health: Health,
     pub hitbox: Hitbox,
+    pub movement: Movement,
     #[bundle]
     pub sprite: SpriteSheetBundle,
     pub sprite_size: SpriteSize,
@@ -136,14 +184,22 @@ impl Health {
     }
 }
 
+#[derive(Debug)]
+pub enum Movement {
+    Down,
+    Strafe,
+}
+
 fn explode_enemies(
     mut commands: Commands,
     server: Res<AssetServer>,
     audio: Res<Audio>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    scale: Res<SpriteScale>,
     mut atlases: ResMut<Assets<TextureAtlas>>,
-    query: Query<(Entity, &Health, &Transform), (With<Enemy>, Changed<Health>)>,
+    query: Query<(Entity, &DeathBehavior, &Health, &Transform), (With<Enemy>, Changed<Health>)>,
 ) {
-    for (entity, health, transform) in query.iter() {
+    for (entity, death_behavior, health, transform) in query.iter() {
         // Explode once health reaches zero.
         if health.current == 0 {
             commands.entity(entity).despawn();
@@ -153,6 +209,30 @@ fn explode_enemies(
                 &mut atlases,
                 *transform,
             ));
+
+            // Execute death behavior.
+            let mut rng = rand::thread_rng();
+            match death_behavior {
+                DeathBehavior::None => {}
+                DeathBehavior::Star => {
+                    // Calculate a random base angle.
+                    let base_angle = rng.gen_range(0.0..60.0);
+                    for bullet in Bullet::Basic.spawn(
+                        &server,
+                        &mut materials,
+                        &scale,
+                        transform.translation.truncate(),
+                        Vec2::ZERO,
+                        Vec2::ZERO,
+                        base_angle,
+                        &[0.0, 60.0, 120.0, 180.0, 240.0, 300.0],
+                        8.0,
+                        4.0,
+                    ) {
+                        commands.spawn_bundle(bullet).insert(EnemyFaction);
+                    }
+                }
+            }
         }
     }
 }
@@ -163,9 +243,9 @@ fn fire_bullets(
     mut materials: ResMut<Assets<ColorMaterial>>,
     scale: Res<SpriteScale>,
     time: Res<Time>,
-    mut query: Query<(&Attack, &mut FireRate, &Transform), With<Enemy>>,
+    mut query: Query<(&Attack, &mut FireRate, &Transform, &Velocity), With<Enemy>>,
 ) {
-    for (attack, mut fire_rate, transform) in query.iter_mut() {
+    for (attack, mut fire_rate, transform, velocity) in query.iter_mut() {
         // Tick fire rate timer.
         fire_rate.tick(time.delta());
         if fire_rate.finished() {
@@ -175,15 +255,58 @@ fn fire_bullets(
                     &mut materials,
                     &scale,
                     transform.translation.truncate(),
+                    Vec2::ZERO,
+                    Vec2::ZERO,
                     -90.0,
                     &[0.0],
                     8.0,
                     4.0,
                 ),
+                Attack::Bomb => {
+                    // Calculate base velocity.
+                    let mut base_velocity = velocity.0;
+                    base_velocity.y = 0.0;
+
+                    Bullet::Bomb.spawn(
+                        &server,
+                        &mut materials,
+                        &scale,
+                        transform.translation.truncate(),
+                        base_velocity,
+                        Vec2::new(0.0, -0.1),
+                        0.0,
+                        &[0.0],
+                        0.0,
+                        4.0,
+                    )
+                }
             };
 
             for bullet in bullets {
                 commands.spawn_bundle(bullet).insert(EnemyFaction);
+            }
+        }
+    }
+}
+
+fn move_enemies(
+    window: Res<WindowSize>,
+    mut query: Query<(&Movement, &SpriteSize, &mut Transform, &mut Velocity), With<Enemy>>,
+) {
+    let mut rng = rand::thread_rng();
+    for (movement, sprite, mut transform, mut velocity) in query.iter_mut() {
+        match movement {
+            Movement::Down => {}
+            Movement::Strafe => {
+                // Change direction when hitting wall or at random.
+                let width = collision::inner_bound(window.width, sprite.width);
+                if rng.gen::<f32>() < 0.002
+                    || transform.translation.x > width
+                    || transform.translation.x < -width
+                {
+                    transform.translation.x = transform.translation.x.min(width).max(-width);
+                    velocity.0.x *= -1.0;
+                }
             }
         }
     }

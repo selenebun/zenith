@@ -90,11 +90,18 @@ fn reset_level(
 
 fn setup(mut commands: Commands) {
     // Initialize levels.
-    let levels = vec![Level {
-        delay: 800..3200,
-        enemies: vec![(Enemy::Basic, 1)],
-        enemy_limit: 10,
-    }];
+    let levels = vec![
+        Level {
+            delay: 800..3200,
+            enemies: vec![(Enemy::Basic, 1)],
+            enemy_limit: 10,
+        },
+        Level {
+            delay: 800..3200,
+            enemies: vec![(Enemy::Basic, 4), (Enemy::Bomber, 1)],
+            enemy_limit: 40,
+        },
+    ];
 
     // Initialize current level data.
     commands.spawn_bundle(CurrentLevelBundle {
