@@ -10,9 +10,9 @@ impl Plugin for PhysicsPlugin {
         app.add_system_set(
             SystemSet::on_update(GameState::Playing)
                 .with_system(apply_acceleration.system().label("apply_acceleration"))
+                .with_system(apply_star_velocity.system())
                 .with_system(apply_velocity.system().after("apply_acceleration")),
-        )
-        .add_system(apply_star_velocity.system());
+        );
     }
 }
 

@@ -9,9 +9,13 @@ pub struct InputPlugin;
 impl Plugin for InputPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system_set(
+            SystemSet::on_update(GameState::Paused).with_system(toggle_paused.system()),
+        )
+        .add_system_set(
             SystemSet::on_update(GameState::Playing)
                 .with_system(fire_bullets.system())
-                .with_system(move_player.system().label("move_player")),
+                .with_system(move_player.system().label("move_player"))
+                .with_system(toggle_paused.system()),
         );
     }
 }
@@ -81,5 +85,19 @@ fn move_player(
 
         // Clamp velocity to current speed.
         transform.translation += velocity.clamp_length_max(speed).extend(0.0);
+    }
+}
+
+fn toggle_paused(mut state: ResMut<State<GameState>>, mut keys: ResMut<Input<KeyCode>>) {
+    // Pause when escape is pressed.
+    if keys.pressed(KeyCode::Escape) {
+        match state.current() {
+            GameState::Paused => state.pop().unwrap(),
+            GameState::Playing => state.push(GameState::Paused).unwrap(),
+            _ => unreachable!(),
+        }
+
+        // Clera key.
+        keys.reset(KeyCode::Escape);
     }
 }

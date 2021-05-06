@@ -47,6 +47,7 @@ impl Plugin for GamePlugin {
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum GameState {
     GameOver,
+    Paused,
     Playing,
 }
 
